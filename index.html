@@ -1,26 +1,184 @@
-<!doctype html>
+<!DOCTYPE html>
 <html lang="en">
-  <head>
-    <meta charset="UTF-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <!-- TODO: Set the document title to the name of your application -->
-    <title>Lovable App</title>
-    <meta name="description" content="Lovable Generated Project" />
-    <meta name="author" content="Lovable" />
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>❤️ For My Valentine ❤️</title>
+    <style>
+        :root { --primary: #e91e63; --bg: #fce4ec; --grid-bg: #fff; }
+        body { 
+            font-family: 'Courier New', Courier, monospace; 
+            background-color: var(--bg); 
+            color: #333; 
+            display: flex; flex-direction: column; align-items: center; 
+            padding: 20px; margin: 0; min-height: 100vh;
+            overflow-x: hidden; /* Prevent scroll from hearts */
+        }
+        
+        /* Floating Hearts Animation */
+        .heart {
+            position: fixed;
+            color: #e91e63;
+            opacity: 0.5;
+            font-size: 20px;
+            animation: float 10s linear infinite;
+            z-index: -1; /* Behind the puzzle */
+        }
+        @keyframes float {
+            0% { transform: translateY(110vh) rotate(0deg); opacity: 0.8; }
+            100% { transform: translateY(-10vh) rotate(360deg); opacity: 0; }
+        }
 
-    <!-- TODO: Update og:title to match your application name -->
-    <meta property="og:title" content="Lovable App" />
-    <meta property="og:description" content="Lovable Generated Project" />
-    <meta property="og:type" content="website" />
-    <meta property="og:image" content="https://lovable.dev/opengraph-image-p98pqg.png" />
+        h1 { color: var(--primary); text-align: center; margin-bottom: 5px; text-shadow: 2px 2px 0px #fff; }
+        p { color: #555; margin-bottom: 20px; font-style: italic; font-weight: bold; }
+        
+        #crossword-container { 
+            display: grid; gap: 2px; background-color: #333; padding: 2px; 
+            box-shadow: 0 10px 20px rgba(0,0,0,0.1);
+        }
+        .cell { background-color: var(--grid-bg); width: 30px; height: 30px; position: relative; display: flex; align-items: center; justify-content: center; }
+        .cell input { width: 100%; height: 100%; border: none; text-align: center; font-size: 16px; text-transform: uppercase; font-weight: bold; background: transparent; color: transparent; padding: 0; outline: none; cursor: pointer; }
+        .cell input:focus, .cell input:not(:placeholder-shown) { color: black; background: #fff0f6; }
+        .cell.black { background-color: #333; }
+        .cell span { position: absolute; top: 1px; left: 2px; font-size: 9px; pointer-events: none; line-height: 1; }
+        
+        #clues { max-width: 800px; width: 100%; background: rgba(255,255,255,0.9); padding: 20px; margin-top: 20px; border-radius: 10px; display: flex; flex-wrap: wrap; gap: 20px; box-shadow: 0 4px 10px rgba(0,0,0,0.1); }
+        .clue-col { flex: 1; min-width: 250px; }
+        h3 { color: var(--primary); border-bottom: 2px solid var(--primary); }
+        ul { list-style: none; padding: 0; }
+        li { margin-bottom: 8px; font-size: 14px; }
+        
+        #check-btn { margin-top: 20px; background: var(--primary); color: white; border: none; padding: 15px 30px; font-size: 18px; cursor: pointer; border-radius: 50px; transition: transform 0.2s; box-shadow: 0 5px 15px rgba(233, 30, 99, 0.4); }
+        #check-btn:active { transform: scale(0.95); }
+        
+        #success-modal { display: none; position: fixed; top: 50%; left: 50%; transform: translate(-50%, -50%); background: white; padding: 40px; border: 4px solid var(--primary); text-align: center; z-index: 100; box-shadow: 0 0 50px rgba(233, 30, 99, 0.6); border-radius: 20px; width: 80%; max-width: 400px; }
+        .overlay { display: none; position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: rgba(0,0,0,0.5); z-index: 99; }
+    </style>
+</head>
+<body>
+    <div id="hearts-container"></div>
 
-    <meta name="twitter:card" content="summary_large_image" />
-    <meta name="twitter:site" content="@Lovable" />
-    <meta name="twitter:image" content="https://lovable.dev/opengraph-image-p98pqg.png" />
-  </head>
+    <h1>❤️ For My Valentine ❤️</h1>
+    <p>A special puzzle just for you</p>
 
-  <body>
-    <div id="root"></div>
-    <script type="module" src="/src/main.tsx"></script>
-  </body>
+    <div style="overflow-x: auto; max-width: 100vw; border-radius: 8px;">
+        <div id="crossword-container"></div>
+    </div>
+
+    <div id="clues">
+        <div class="clue-col"><h3>Across</h3><ul id="across-clues"></ul></div>
+        <div class="clue-col"><h3>Down</h3><ul id="down-clues"></ul></div>
+    </div>
+
+    <button id="check-btn" onclick="checkAnswers()">Check Answers 💘</button>
+
+    <div class="overlay" id="overlay"></div>
+    <div id="success-modal">
+        <h2>Happy Valentine's Day!</h2>
+        <p>You solved it! I love you!</p>
+        <p style="font-size: 60px;">💐🍫🧸</p>
+    </div>
+
+    <script>
+        // 1. YOUR WORDS
+        const rows = 20; const cols = 15; 
+        const words = [
+            { word: "BLUFFS", clue: "Where we like to go", x: 7, y: 1, dir: "down", number: 1 },
+            { word: "MUFF", clue: "My nickname", x: 5, y: 4, dir: "across", number: 2 },
+            { word: "FLOWERS", clue: "What do I always want", x: 9, y: 4, dir: "down", number: 3 },
+            { word: "SNOOPY", clue: "My Halloween costume", x: 7, y: 6, dir: "across", number: 4 },
+            { word: "YES", clue: "Will you be my Valentine", x: 12, y: 6, dir: "down", number: 5 },
+            { word: "CHIPOTLE", clue: "What restaurant do you not like but I love", x: 2, y: 8, dir: "across", number: 6 },
+            { word: "HEDGEHOG", clue: "Our matching stuffed animal", x: 3, y: 8, dir: "down", number: 7 },
+            { word: "TOWELWARMER", clue: "What I got you for Christmas two years ago", x: 7, y: 8, dir: "down", number: 8 },
+            { word: "OSU", clue: "Where I asked you to transfer", x: 11, y: 11, dir: "down", number: 9 },
+            { word: "CULVERS", clue: "Where did we meet on our first date", x: 5, y: 12, dir: "across", number: 10 },
+            { word: "MAYS", clue: "Your nickname", x: 6, y: 14, dir: "across", number: 11 },
+            { word: "BASKETBALL", clue: "What was the first sport we played together", x: 3, y: 17, dir: "across", number: 12 }
+        ];
+
+        // 2. RENDER GRID
+        const gridContainer = document.getElementById('crossword-container');
+        gridContainer.style.gridTemplateColumns = `repeat(${cols}, 30px)`;
+        gridContainer.style.gridTemplateRows = `repeat(${rows}, 30px)`;
+        let gridMap = Array(rows).fill().map(() => Array(cols).fill(null));
+
+        words.forEach(w => {
+            for (let i = 0; i < w.word.length; i++) {
+                let r = w.y - 1 + (w.dir === "down" ? i : 0);
+                let c = w.x - 1 + (w.dir === "across" ? i : 0);
+                if (r < rows && c < cols) {
+                    if (!gridMap[r][c]) gridMap[r][c] = {};
+                    gridMap[r][c].char = w.word[i];
+                    if (i === 0) gridMap[r][c].number = w.number;
+                }
+            }
+            const li = document.createElement('li');
+            li.innerHTML = `<strong>${w.number}.</strong> ${w.clue}`;
+            document.getElementById(w.dir + "-clues").appendChild(li);
+        });
+
+        for (let r = 0; r < rows; r++) {
+            for (let c = 0; c < cols; c++) {
+                const cell = document.createElement('div');
+                cell.className = 'cell';
+                if (gridMap[r][c]) {
+                    const input = document.createElement('input');
+                    input.maxLength = 1; input.dataset.letter = gridMap[r][c].char;
+                    input.dataset.row = r; input.dataset.col = c;
+                    cell.appendChild(input);
+                    if (gridMap[r][c].number) {
+                        const span = document.createElement('span'); span.innerText = gridMap[r][c].number;
+                        cell.appendChild(span);
+                    }
+                } else { cell.className += " black"; }
+                gridContainer.appendChild(cell);
+            }
+        }
+
+        // 3. INPUT LOGIC
+        const inputs = document.querySelectorAll('input');
+        inputs.forEach(input => {
+            input.addEventListener('keyup', (e) => {
+                const r = parseInt(e.target.dataset.row); const c = parseInt(e.target.dataset.col);
+                if (e.key.length === 1 && e.key.match(/[a-z]/i)) {
+                    let next = document.querySelector(`input[data-row="${r}"][data-col="${c+1}"]`);
+                    if (!next) next = document.querySelector(`input[data-row="${r+1}"][data-col="${c}"]`);
+                    if (next) next.focus();
+                }
+                if (e.key === "Backspace") {
+                    let prev = document.querySelector(`input[data-row="${r}"][data-col="${c-1}"]`);
+                    if (!prev) prev = document.querySelector(`input[data-row="${r-1}"][data-col="${c}"]`);
+                    if (prev) prev.focus();
+                }
+            });
+        });
+
+        function checkAnswers() {
+            let correct = true;
+            document.querySelectorAll('input').forEach(input => {
+                if (input.value.toUpperCase() !== input.dataset.letter) {
+                    correct = false; input.style.backgroundColor = "#ffcdd2";
+                } else { input.style.backgroundColor = "#c8e6c9"; }
+            });
+            if (correct) {
+                document.getElementById('success-modal').style.display = 'block';
+                document.getElementById('overlay').style.display = 'block';
+            }
+        }
+
+        // 4. GENERATE FLOATING HEARTS
+        function createHeart() {
+            const heart = document.createElement('div');
+            heart.classList.add('heart');
+            heart.innerHTML = '❤️';
+            heart.style.left = Math.random() * 100 + "vw";
+            heart.style.animationDuration = Math.random() * 5 + 5 + "s"; 
+            heart.style.fontSize = Math.random() * 20 + 10 + "px";
+            document.body.appendChild(heart);
+            setTimeout(() => { heart.remove(); }, 10000);
+        }
+        setInterval(createHeart, 500);
+    </script>
+</body>
 </html>
