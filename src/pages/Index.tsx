@@ -20,7 +20,7 @@ const COLS = 15;
 
 const WORDS = [
   { word: "BLUFFS", clue: "Where we like to go", x: 7, y: 1, dir: "down", number: 1 },
-  { word: "MUFF", clue: "My nickname", x: 4, y: 4, dir: "across", number: 2 },
+  { word: "MUFF", clue: "My nickname", x: 3, y: 4, dir: "across", number: 2 },
   { word: "FLOWERS", clue: "What do I always want", x: 9, y: 4, dir: "down", number: 3 },
   { word: "SNOOPY", clue: "My Halloween costume", x: 7, y: 6, dir: "across", number: 4 },
   { word: "YES", clue: "Will you be my Valentine", x: 12, y: 6, dir: "down", number: 5 },
